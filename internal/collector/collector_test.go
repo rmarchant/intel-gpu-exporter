@@ -1,0 +1,57 @@
+package collector
+
+import (
+	gpu "github.com/clambin/gpumon/internal/intel_gpu_top"
+	"github.com/prometheus/client_golang/prometheus/testutil"
+	"github.com/stretchr/testify/assert"
+	"strings"
+	"testing"
+)
+
+func TestCollector(t *testing.T) {
+	f := fakeTop{
+		stats: gpu.GPUStats{
+			Engines: map[string]gpu.EngineStats{
+				"VCS": {Busy: 95, Sema: 1, Wait: 10},
+			},
+		},
+	}
+	c := Collector{StatFetcher: f}
+
+	assert.NoError(t, testutil.CollectAndCompare(&c, strings.NewReader(`
+# HELP gpumon_clients_count 
+# TYPE gpumon_clients_count gauge
+gpumon_clients_count 5
+
+# HELP gpumon_power 
+# TYPE gpumon_power gauge
+gpumon_power{type="gpu"} 10
+gpumon_power{type="pkg"} 20
+
+# HELP gpumon_engine_usage 
+# TYPE gpumon_engine_usage gauge
+gpumon_engine_usage{attrib="busy",engine="VCS"} 95
+gpumon_engine_usage{attrib="sema",engine="VCS"} 1
+gpumon_engine_usage{attrib="wait",engine="VCS"} 10
+`)))
+}
+
+var _ StatFetcher = &fakeTop{}
+
+type fakeTop struct {
+	stats gpu.GPUStats
+}
+
+func (f fakeTop) EngineStats() map[string]gpu.EngineStats {
+	return f.stats.Engines
+}
+
+func (f fakeTop) PowerStats() (float64, float64) {
+	return 10, 20
+}
+
+func (f fakeTop) ClientStats() float64 {
+	return 5
+}
+
+func (f fakeTop) Reset() {}
