@@ -62,7 +62,7 @@ func Main(ctx context.Context, r prometheus.Registerer, l *slog.Logger) error {
 	go func() {
 		if err := a.Read(stdout); err != nil {
 			l.Error("intel_gpu_top read failed", "err", err)
-			os.Exit(1)
+			//os.Exit(1)
 		}
 	}()
 
