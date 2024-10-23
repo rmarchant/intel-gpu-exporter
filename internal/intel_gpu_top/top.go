@@ -99,16 +99,22 @@ func (a *Aggregator) Read(r io.Reader) error {
 		if err != nil {
 			return fmt.Errorf("error while reading stats: %w", err)
 		}
-		a.lock.Lock()
-		a.stats = append(a.stats, stat)
-		a.lock.Unlock()
+		a.add(stat)
 	}
 	return nil
+}
+
+func (a *Aggregator) add(stats GPUStats) {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	// TODO: if no one is collecting, this will grow until OOM.  should we clear a certain number of measurements?
+	a.stats = append(a.stats, stats)
 }
 
 func (a *Aggregator) Reset() {
 	a.lock.Lock()
 	defer a.lock.Unlock()
+	// TODO: keep the last measurement so we have something to report to the collector?
 	a.stats = a.stats[:0]
 }
 
