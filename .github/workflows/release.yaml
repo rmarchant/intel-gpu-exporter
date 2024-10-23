@@ -5,6 +5,13 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  packages:
+    - write
+  contents:
+    - read
+    - write
+
 jobs:
   test:
     uses: clambin/workflows/.github/workflows/test.yaml@main
