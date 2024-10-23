@@ -6,8 +6,7 @@ on:
       - main
 
 permissions:
-  packages:
-    - write
+  packages: write
 
 jobs:
   test:

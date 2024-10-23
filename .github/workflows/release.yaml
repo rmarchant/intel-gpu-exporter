@@ -6,11 +6,8 @@ on:
       - 'v*'
 
 permissions:
-  packages:
-    - write
-  contents:
-    - read
-    - write
+  packages: write
+  contents: write
 
 jobs:
   test:
