@@ -17,3 +17,4 @@ jobs:
     with:
       dockerfile: Dockerfile
       image: ghcr.io/clambin/intel-gpu-exporter
+      platforms: linux/amd64
