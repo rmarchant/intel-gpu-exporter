@@ -56,7 +56,7 @@ func Main(ctx context.Context, r prometheus.Registerer, l *slog.Logger) error {
 
 	var a aggregator.Aggregator
 	go func() {
-		if err := a.Read(&igt.V118toV117{Reader: stdout}); err != nil {
+		if err := a.Read(igt.V118toV117{Reader: stdout}); err != nil {
 			l.Error("intel_gpu_top read failed", "err", err)
 			//os.Exit(1)
 		}

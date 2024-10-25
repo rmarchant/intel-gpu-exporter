@@ -20,7 +20,7 @@ type V118toV117 struct {
 }
 
 // Read implements the io.Reader interface
-func (v *V118toV117) Read(p []byte) (n int, err error) {
+func (v V118toV117) Read(p []byte) (n int, err error) {
 	n, err = v.Reader.Read(p)
 	if err != nil || n == 0 {
 		return n, err
@@ -32,7 +32,7 @@ func (v *V118toV117) Read(p []byte) (n int, err error) {
 	}
 	if len(p) > 2 && bytes.Equal(p[len(p)-3:], []byte("\n]\n")) {
 		n -= 3
-		p = p[:n]
+		//p = p[:n]
 	}
 	return n, err
 }
