@@ -8,19 +8,19 @@ import (
 var (
 	engineMetric = prometheus.NewDesc(
 		prometheus.BuildFQName("gpumon", "engine", "usage"),
-		"",
+		"Usage statistics for the different GPU engines",
 		[]string{"engine", "attrib"},
 		nil,
 	)
 	powerMetric = prometheus.NewDesc(
 		prometheus.BuildFQName("gpumon", "", "power"),
-		"",
+		"Power consumption by type",
 		[]string{"type"},
 		nil,
 	)
 	clientMetric = prometheus.NewDesc(
 		prometheus.BuildFQName("gpumon", "clients", "count"),
-		"",
+		"Number of active clients",
 		nil,
 		nil,
 	)

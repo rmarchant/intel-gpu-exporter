@@ -19,20 +19,20 @@ func TestCollector(t *testing.T) {
 	c := Collector{StatFetcher: f}
 
 	assert.NoError(t, testutil.CollectAndCompare(&c, strings.NewReader(`
-# HELP gpumon_clients_count 
+# HELP gpumon_clients_count Number of active clients
 # TYPE gpumon_clients_count gauge
 gpumon_clients_count 5
 
-# HELP gpumon_power 
-# TYPE gpumon_power gauge
-gpumon_power{type="gpu"} 10
-gpumon_power{type="pkg"} 20
-
-# HELP gpumon_engine_usage 
+# HELP gpumon_engine_usage Usage statistics for the different GPU engines
 # TYPE gpumon_engine_usage gauge
 gpumon_engine_usage{attrib="busy",engine="VCS"} 95
 gpumon_engine_usage{attrib="sema",engine="VCS"} 1
 gpumon_engine_usage{attrib="wait",engine="VCS"} 10
+
+# HELP gpumon_power Power consumption by type
+# TYPE gpumon_power gauge
+gpumon_power{type="gpu"} 10
+gpumon_power{type="pkg"} 20
 `)))
 }
 
