@@ -5,8 +5,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/clambin/gpumon/internal/collector"
-	gpu "github.com/clambin/gpumon/internal/intel_gpu_top"
+	"github.com/clambin/intel-gpu-exporter/internal/aggregator"
+	"github.com/clambin/intel-gpu-exporter/internal/collector"
+	igt "github.com/clambin/intel-gpu-exporter/pkg/intel-gpu-top"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io"
@@ -23,7 +24,6 @@ var (
 	version = "change-me"
 	debug   = flag.Bool("debug", false, "Enable debug logging")
 	addr    = flag.String("addr", ":9090", "Prometheus metrics listener address")
-	fix     = flag.Bool("fix", false, "Attempt to fix invalid JSON produced by intel_gpu_top")
 )
 
 func main() {
@@ -54,13 +54,9 @@ func Main(ctx context.Context, r prometheus.Registerer, l *slog.Logger) error {
 
 	l.Debug("intel_gpu_top started", "cmd", cmd.String())
 
-	if *fix {
-		stdout = io.NopCloser(&gpu.JSONFixer{Reader: stdout})
-	}
-
-	var a gpu.Aggregator
+	var a aggregator.Aggregator
 	go func() {
-		if err := a.Read(stdout); err != nil {
+		if err := a.Read(&igt.V118toV117{Reader: stdout}); err != nil {
 			l.Error("intel_gpu_top read failed", "err", err)
 			//os.Exit(1)
 		}
@@ -79,10 +75,9 @@ func Main(ctx context.Context, r prometheus.Registerer, l *slog.Logger) error {
 
 	l.Debug("metrics server started")
 
+	<-ctx.Done()
 	return cmd.Wait()
 }
-
-//const gpuTopCommand = "ssh ubuntu@nuc1 sudo intel_gpu_top -J -s 5000"
 
 const gpuTopCommand = "intel_gpu_top -J -s 5000"
 
