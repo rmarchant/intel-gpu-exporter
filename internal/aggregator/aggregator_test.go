@@ -32,6 +32,13 @@ func TestAggregator(t *testing.T) {
 	}
 
 	assert.Equal(t, 1.0, a.ClientStats())
+	gpu, pkg := a.PowerStats()
+	assert.Equal(t, 1.0, gpu)
+	assert.Equal(t, 4.0, pkg)
+
+	cancel()
+	a.Reset()
+	assert.Empty(t, a.EngineStats())
 }
 
 func Test_medianFunc(t *testing.T) {

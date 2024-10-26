@@ -54,7 +54,7 @@ const SinglePayload = `{
 	},
 	"power": {
 		"GPU": 1.000000,
-		"Package": 4.036775,
+		"Package": 4.000000,
 		"unit": "W"
 	},
 	"imc-bandwidth": {

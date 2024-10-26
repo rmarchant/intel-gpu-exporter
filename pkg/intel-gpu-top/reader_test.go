@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/clambin/intel-gpu-exporter/pkg/intel-gpu-top/testutil"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"testing"
 	"time"
@@ -14,13 +13,18 @@ import (
 
 func TestReadGPUStats(t *testing.T) {
 	tests := []struct {
-		name   string
-		array  bool
-		commas bool
+		name    string
+		array   bool
+		commas  bool
+		convert bool
+		send    int
+		receive int
+		wantErr assert.ErrorAssertionFunc
 	}{
-		{"v1.17", false, false},
-		{"v1.18a", true, true},
-		{"v1.18b", true, false},
+		{"v1.17", false, false, true, 5, 5, assert.NoError},
+		{"v1.18a", true, true, true, 5, 5, assert.NoError},
+		{"v1.18b", true, false, true, 5, 5, assert.NoError},
+		{"fail", true, true, false, 1, 0, assert.Error},
 	}
 
 	for _, tt := range tests {
@@ -28,15 +32,21 @@ func TestReadGPUStats(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 
-			const recordCount = 5
-			r := testutil.FakeServer(ctx, []byte(testutil.SinglePayload), recordCount, tt.array, tt.commas, 50*time.Millisecond)
+			r := testutil.FakeServer(ctx, []byte(testutil.SinglePayload), tt.send, tt.array, tt.commas, 50*time.Millisecond)
 
+			if tt.convert {
+				r = &V118toV117{Reader: r}
+			}
 			var got int
-			for _, err := range ReadGPUStats(&V118toV117{Reader: r}) {
-				require.NoError(t, err)
+			var err error
+			for _, err = range ReadGPUStats(r) {
+				if err != nil {
+					break
+				}
 				got++
 			}
-			assert.Equal(t, recordCount, got)
+			tt.wantErr(t, err)
+			assert.Equal(t, tt.receive, got)
 		})
 	}
 }
