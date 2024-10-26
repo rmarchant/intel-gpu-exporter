@@ -10,12 +10,7 @@ func FakeServer(ctx context.Context, payload []byte, count int, array bool, comm
 	r, w := io.Pipe()
 
 	go func() {
-		defer func() {
-			if array {
-				_, _ = w.Write([]byte("\n]\n"))
-			}
-			_ = w.Close()
-		}()
+		defer func() { _ = w.Close() }()
 		if array {
 			_, _ = w.Write([]byte("[\n"))
 		}
@@ -30,6 +25,9 @@ func FakeServer(ctx context.Context, payload []byte, count int, array bool, comm
 				_, _ = w.Write([]byte("\n"))
 				_, _ = w.Write(payload)
 			}
+		}
+		if array {
+			_, _ = w.Write([]byte("\n]\n"))
 		}
 	}()
 

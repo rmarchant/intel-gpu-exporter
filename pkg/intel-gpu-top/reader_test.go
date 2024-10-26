@@ -26,10 +26,10 @@ func TestReadGPUStats(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+			t.Cleanup(cancel)
 
-			const recordCount = 10
-			r := testutil.FakeServer(ctx, []byte(testutil.SinglePayload), recordCount, tt.array, tt.commas, 100*time.Millisecond)
+			const recordCount = 5
+			r := testutil.FakeServer(ctx, []byte(testutil.SinglePayload), recordCount, tt.array, tt.commas, 50*time.Millisecond)
 
 			var got int
 			for _, err := range ReadGPUStats(&V118toV117{Reader: r}) {

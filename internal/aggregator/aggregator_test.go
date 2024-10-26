@@ -11,7 +11,7 @@ import (
 
 func TestAggregator(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	t.Cleanup(cancel)
 
 	const payloadCount = 4
 	r := testutil.FakeServer(ctx, []byte(testutil.SinglePayload), payloadCount, false, false, time.Millisecond)
@@ -21,9 +21,11 @@ func TestAggregator(t *testing.T) {
 	// a.Read works asynchronously. Wait for all data to be read.
 	assert.Eventually(t, func() bool { return len(a.EngineStats()) == payloadCount }, time.Second, time.Millisecond)
 
+	wantEngines := []string{"Render/3D", "Blitter", "Video", "VideoEnhance"}
+
 	engineStats := a.EngineStats()
-	require.Len(t, engineStats, payloadCount)
-	for i, engineName := range []string{"Render/3D", "Blitter", "Video", "VideoEnhance"} {
+	require.Len(t, engineStats, len(wantEngines))
+	for i, engineName := range wantEngines {
 		assert.Contains(t, engineStats, engineName)
 		assert.Equal(t, float64(i+1), engineStats[engineName].Busy)
 		assert.Equal(t, "%", engineStats[engineName].Unit)
