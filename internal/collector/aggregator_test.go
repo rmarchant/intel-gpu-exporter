@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"io"
 	"log/slog"
+	"slices"
 	"testing"
 	"time"
 )
@@ -73,36 +74,42 @@ func TestEngineStats_LogValue(t *testing.T) {
 }
 
 func Test_medianFunc(t *testing.T) {
-	t.Run("float64", func(t *testing.T) {
-		values := make([]float64, 5)
-		for i := range 5 {
-			values[i] = float64(i)
-		}
-		assert.Equal(t, float64(2), medianFunc(values, func(f float64) float64 { return f }))
-		values = make([]float64, 6)
-		for i := range 6 {
-			values[i] = float64(i)
-		}
-		assert.Equal(t, 2.5, medianFunc(values, func(f float64) float64 { return f }))
+	tests := []struct {
+		name   string
+		values []float64
+		want   float64
+	}{
+		{"odd number of values", []float64{0, 1, 2, 3, 4}, 2},
+		{"even number of values", []float64{0, 1, 2, 3, 4, 5}, 2.5},
+		{"empty slice", nil, 0.0},
+		{"handle duplicates", []float64{1, 1, 1, 2}, 1},
+	}
 
-		assert.Zero(t, medianFunc(nil, func(f float64) float64 { return f }))
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			slices.Reverse(tt.values)
+			assert.Equal(t, tt.want, medianFunc(tt.values, func(f float64) float64 { return f }))
+		})
+	}
 }
 
-// Before:
-// Benchmark_mediaFunc-16            331898              3490 ns/op            8192 B/op          1 allocs/op
-func Benchmark_mediaFunc(b *testing.B) {
+// Benchmark_medianFunc/current-16           295650              3847 ns/op            8192 B/op          1 allocs/op
+func Benchmark_medianFunc(b *testing.B) {
 	const count = 1001
 	values := make([]float64, count)
 	for i := range values {
 		values[i] = float64(i)
 	}
+	slices.Reverse(values)
+	want := float64(count / 2)
 	b.ResetTimer()
-	for range b.N {
-		if value := medianFunc(values, func(f float64) float64 { return f }); value != count/2 {
-			b.Fatalf("expected %f, got %f", float64(count/2), value)
+	b.Run("current", func(b *testing.B) {
+		for range b.N {
+			if value := medianFunc(values, func(f float64) float64 { return f }); value != want {
+				b.Fatalf("expected %f, got %f", want, value)
+			}
 		}
-	}
+	})
 }
 
 // Current:
