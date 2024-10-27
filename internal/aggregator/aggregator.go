@@ -50,31 +50,30 @@ func (a *Aggregator) EngineStats() map[string]igt.EngineStats {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
-	statsByEngine := a.getEngineStatsByEngineName()
-
-	engineStats := make(map[string]igt.EngineStats, len(statsByEngine))
-
-	for engine, stats := range statsByEngine {
-		if len(stats) > 0 {
-			engineStats[engine] = igt.EngineStats{
-				Busy: medianFunc(stats, func(stats igt.EngineStats) float64 { return stats.Busy }),
-				Sema: medianFunc(stats, func(stats igt.EngineStats) float64 { return stats.Sema }),
-				Wait: medianFunc(stats, func(stats igt.EngineStats) float64 { return stats.Wait }),
-				Unit: stats[0].Unit,
+	// group engine stats by engine name
+	const engineCount = 4 // GPUs (typically) have 4 engines
+	statsByEngine := make(map[string][]igt.EngineStats, engineCount)
+	for _, stat := range a.stats {
+		for engineName, engineStat := range stat.Engines {
+			// pre-allocate so slices don't need to grow as we add stats
+			if statsByEngine[engineName] == nil {
+				statsByEngine[engineName] = make([]igt.EngineStats, 0, len(a.stats)/engineCount)
 			}
+			statsByEngine[engineName] = append(statsByEngine[engineName], engineStat)
+		}
+	}
+
+	// for each engine, aggregate its stats
+	engineStats := make(map[string]igt.EngineStats, len(statsByEngine))
+	for engine, stats := range statsByEngine {
+		engineStats[engine] = igt.EngineStats{
+			Busy: medianFunc(stats, func(stats igt.EngineStats) float64 { return stats.Busy }),
+			Sema: medianFunc(stats, func(stats igt.EngineStats) float64 { return stats.Sema }),
+			Wait: medianFunc(stats, func(stats igt.EngineStats) float64 { return stats.Wait }),
+			Unit: stats[0].Unit,
 		}
 	}
 	return engineStats
-}
-
-func (a *Aggregator) getEngineStatsByEngineName() map[string][]igt.EngineStats {
-	stats := make(map[string][]igt.EngineStats)
-	for _, stat := range a.stats {
-		for engine, stat := range stat.Engines {
-			stats[engine] = append(stats[engine], stat)
-		}
-	}
-	return stats
 }
 
 func (a *Aggregator) ClientStats() float64 {

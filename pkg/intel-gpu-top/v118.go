@@ -32,7 +32,6 @@ func (v V118toV117) Read(p []byte) (n int, err error) {
 	}
 	if len(p) > 2 && bytes.Equal(p[len(p)-3:], []byte("\n]\n")) {
 		n -= 3
-		//p = p[:n]
 	}
 	return n, err
 }
