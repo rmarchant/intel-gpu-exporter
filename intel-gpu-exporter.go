@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/clambin/intel-gpu-exporter/internal/aggregator"
 	"github.com/clambin/intel-gpu-exporter/internal/collector"
 	igt "github.com/clambin/intel-gpu-exporter/pkg/intel-gpu-top"
 	"github.com/prometheus/client_golang/prometheus"
@@ -54,17 +53,17 @@ func Main(ctx context.Context, r prometheus.Registerer, l *slog.Logger) error {
 
 	l.Debug("intel_gpu_top started", "cmd", cmd.String())
 
-	var a aggregator.Aggregator
+	var c collector.Collector
+	r.MustRegister(&c)
+
 	go func() {
-		if err := a.Read(igt.V118toV117{Reader: stdout}); err != nil {
+		if err := c.Read(igt.V118toV117{Reader: stdout}); err != nil {
 			l.Error("intel_gpu_top read failed", "err", err)
 			//os.Exit(1)
 		}
 	}()
 
 	l.Debug("reader started")
-
-	r.MustRegister(collector.Collector{StatFetcher: &a})
 
 	http.Handle("/metrics", promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{}))
 	go func() {
