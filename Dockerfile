@@ -10,7 +10,7 @@ WORKDIR /app/
 ADD . .
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build \
-    -ldflags="-X main.version=$VERSION" \
+    -ldflags="-X github.com/clambin/intel-gpu-exporter/internal/collector.version=$VERSION" \
     -o intel-gpu-exporter \
     intel-gpu-exporter.go
 
