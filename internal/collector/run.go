@@ -2,55 +2,77 @@ package collector
 
 import (
 	"context"
-	"errors"
-	"flag"
+	"fmt"
 	igt "github.com/clambin/intel-gpu-exporter/pkg/intel-gpu-top"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io"
 	"log/slog"
-	"net/http"
-	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+	"time"
 )
 
 var (
 	version = "change-me"
-	debug   = flag.Bool("debug", false, "Enable debug logging")
-	addr    = flag.String("addr", ":9090", "Prometheus metrics listener address")
 )
 
-func Run(ctx context.Context, r prometheus.Registerer, top io.Reader) {
-	flag.Parse()
+func Run(ctx context.Context, r prometheus.Registerer, scanInterval time.Duration, logger *slog.Logger) error {
+	logger.Info("intel-gpu-exporter starting", "version", version)
+	defer logger.Info("intel-gpu-exporter shutting down")
 
-	var handlerOpts slog.HandlerOptions
-	if *debug {
-		handlerOpts.Level = slog.LevelDebug
+	cmd, output, err := startTop(ctx, scanInterval, logger)
+	if err != nil {
+		return fmt.Errorf("failed to start intel_gpu_top: %w", err)
 	}
-	l := slog.New(slog.NewTextHandler(os.Stderr, &handlerOpts))
+	defer func() {
+		err := cmd.Wait()
+		logger.Debug("intel-gpu-top exited", "err", err)
+	}()
 
-	l.Info("intel-gpu-exporter starting", "version", version, "addr", *addr)
+	logger.Debug("intel-gpu-exporter is running")
 
+	return run(ctx, r, output, logger)
+}
+
+func run(ctx context.Context, r prometheus.Registerer, output io.Reader, logger *slog.Logger) error {
 	var c Collector
+	c.Aggregator.Logger = logger
 	r.MustRegister(&c)
 
+	errCh := make(chan error)
 	go func() {
-		if err := c.Read(igt.V118toV117{Reader: top}); err != nil {
-			l.Error("intel_gpu_top read failed", "err", err)
-			os.Exit(1)
-		}
+		errCh <- c.Read(igt.V118toV117{Reader: output})
 	}()
 
-	l.Debug("reader started")
+	logger.Debug("collector is running")
+	defer logger.Debug("collector is shutting down")
 
-	http.Handle("/metrics", promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{}))
-	go func() {
-		if err := http.ListenAndServe(*addr, nil); !errors.Is(err, http.ErrServerClosed) {
-			l.Error("failed to start metrics server", "err", err)
-			os.Exit(1)
-		}
-	}()
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		return nil
+	}
+}
 
-	l.Debug("metrics server started")
-	<-ctx.Done()
-	l.Info("intel-gpu-exporter shutting down")
+func startTop(ctx context.Context, scanInterval time.Duration, logger *slog.Logger) (*exec.Cmd, io.ReadCloser, error) {
+	cmdline := buildCommand(scanInterval)
+	logger.Debug("top command built", "duration", scanInterval, "cmd", strings.Join(cmdline, " "))
+	cmd := exec.CommandContext(ctx, cmdline[0], cmdline[1:]...)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, nil, fmt.Errorf("stdout pipe failed: %w", err)
+	}
+	return cmd, stdout, cmd.Start()
+}
+
+func buildCommand(scanInterval time.Duration) []string {
+	const gpuTopCommand = "intel_gpu_top -J -s"
+
+	return append(
+		strings.Split(gpuTopCommand, " "),
+		strconv.Itoa(int(scanInterval.Milliseconds())),
+	)
+
 }

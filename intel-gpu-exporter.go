@@ -2,39 +2,47 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"flag"
 	"github.com/clambin/intel-gpu-exporter/internal/collector"
 	"github.com/prometheus/client_golang/prometheus"
-	"io"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"log/slog"
+	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
-	"strings"
 	"syscall"
+	"time"
+)
+
+var (
+	debug    = flag.Bool("debug", false, "Enable debug logging")
+	addr     = flag.String("addr", ":9090", "Prometheus metrics listener address")
+	interval = flag.Duration("interval", 5*time.Second, "Interval to collect statistics")
 )
 
 func main() {
+	flag.Parse()
+
+	var handlerOpts slog.HandlerOptions
+	if *debug {
+		handlerOpts.Level = slog.LevelDebug
+	}
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &handlerOpts))
+
+	http.Handle("/metrics", promhttp.Handler())
+	go func() {
+		if err := http.ListenAndServe(*addr, nil); !errors.Is(err, http.ErrServerClosed) {
+			logger.Error("failed to start metrics server", "err", err)
+			os.Exit(1)
+		}
+	}()
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	topCmd, topOutput, err := startTop(ctx)
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "intel_gpu_top failed to start: %s", err.Error())
+	if err := collector.Run(ctx, prometheus.DefaultRegisterer, *interval, logger); err != nil {
+		logger.Error("collector failed to start", "err", err)
 		os.Exit(1)
 	}
-
-	go collector.Run(ctx, prometheus.DefaultRegisterer, topOutput)
-	_ = topCmd.Wait()
-}
-
-const gpuTopCommand = "intel_gpu_top -J -s 5000"
-
-func startTop(ctx context.Context) (*exec.Cmd, io.ReadCloser, error) {
-	cmdline := strings.Split(gpuTopCommand, " ")
-	cmd := exec.CommandContext(ctx, cmdline[0], cmdline[1:]...)
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, nil, fmt.Errorf("stdout pipe failed: %w", err)
-	}
-	return cmd, stdout, cmd.Start()
 }

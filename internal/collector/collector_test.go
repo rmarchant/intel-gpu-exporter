@@ -6,6 +6,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +18,7 @@ func TestCollector(t *testing.T) {
 	t.Cleanup(cancel)
 
 	var c Collector
+	c.Aggregator.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	go func() {
 		require.NoError(t, c.Read(testutil2.FakeServer(ctx, []byte(testutil2.SinglePayload), 1, false, false, 0)))
 	}()

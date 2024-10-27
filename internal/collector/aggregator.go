@@ -4,15 +4,19 @@ import (
 	"fmt"
 	igt "github.com/clambin/intel-gpu-exporter/pkg/intel-gpu-top"
 	"io"
+	"log/slog"
 	"slices"
+	"sort"
+	"strings"
 	"sync"
 )
 
 // An Aggregator collects the GPUStats received from intel_gpu_top and produces a consolidated sample to be reported to Prometheus.
 // Consolidation is done by calculating the median of each attribute.
 type Aggregator struct {
-	stats []igt.GPUStats
-	lock  sync.RWMutex
+	Logger *slog.Logger
+	stats  []igt.GPUStats
+	lock   sync.RWMutex
 }
 
 func (a *Aggregator) Read(r io.Reader) error {
@@ -41,8 +45,9 @@ func (a *Aggregator) len() int {
 func (a *Aggregator) Reset() {
 	a.lock.Lock()
 	defer a.lock.Unlock()
-	// TODO: keep the last measurement so we have something to report to the collector?
-	a.stats = a.stats[:0]
+	if len(a.stats) > 0 {
+		a.stats = a.stats[len(a.stats)-1:]
+	}
 }
 
 func (a *Aggregator) PowerStats() (float64, float64) {
@@ -52,7 +57,7 @@ func (a *Aggregator) PowerStats() (float64, float64) {
 		medianFunc(a.stats, func(stats igt.GPUStats) float64 { return stats.Power.Package })
 }
 
-func (a *Aggregator) EngineStats() map[string]igt.EngineStats {
+func (a *Aggregator) EngineStats() EngineStats {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
@@ -70,7 +75,7 @@ func (a *Aggregator) EngineStats() map[string]igt.EngineStats {
 	}
 
 	// for each engine, aggregate its stats
-	engineStats := make(map[string]igt.EngineStats, len(statsByEngine))
+	engineStats := make(EngineStats, len(statsByEngine))
 	for engine, stats := range statsByEngine {
 		engineStats[engine] = igt.EngineStats{
 			Busy: medianFunc(stats, func(stats igt.EngineStats) float64 { return stats.Busy }),
@@ -79,6 +84,7 @@ func (a *Aggregator) EngineStats() map[string]igt.EngineStats {
 			Unit: stats[0].Unit,
 		}
 	}
+	a.Logger.Debug("engine stats collected", "samples", len(a.stats), "engines", engineStats)
 	return engineStats
 }
 
@@ -86,6 +92,19 @@ func (a *Aggregator) ClientStats() float64 {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 	return medianFunc(a.stats, func(stats igt.GPUStats) float64 { return float64(len(stats.Clients)) })
+}
+
+var _ slog.LogValuer = EngineStats{}
+
+type EngineStats map[string]igt.EngineStats
+
+func (e EngineStats) LogValue() slog.Value {
+	engineNames := make([]string, 0, len(e))
+	for engineName := range e {
+		engineNames = append(engineNames, engineName)
+	}
+	sort.Strings(engineNames)
+	return slog.StringValue(strings.Join(engineNames, ","))
 }
 
 func medianFunc[T any](entries []T, f func(T) float64) float64 {

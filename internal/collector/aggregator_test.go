@@ -6,6 +6,8 @@ import (
 	"github.com/clambin/intel-gpu-exporter/pkg/intel-gpu-top/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io"
+	"log/slog"
 	"testing"
 	"time"
 )
@@ -17,6 +19,7 @@ func TestAggregator(t *testing.T) {
 	const payloadCount = 4
 	r := testutil.FakeServer(ctx, []byte(testutil.SinglePayload), payloadCount, false, false, time.Millisecond)
 	var a Aggregator
+	a.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	assert.NoError(t, a.Read(r))
 
 	// a.Read works asynchronously. Wait for all data to be read.
@@ -38,8 +41,35 @@ func TestAggregator(t *testing.T) {
 	assert.Equal(t, 4.0, pkg)
 
 	cancel()
+}
+
+func TestAggregator_Reset(t *testing.T) {
+	var a Aggregator
+	a.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	assert.Len(t, a.stats, 0)
 	a.Reset()
-	assert.Empty(t, a.EngineStats())
+	assert.Len(t, a.stats, 0)
+	var stat intel_gpu_top.GPUStats
+	for i := range 5 {
+		stat.Power.GPU = float64(i)
+		a.add(stat)
+	}
+	assert.Len(t, a.stats, 5)
+	a.Reset()
+	require.Len(t, a.stats, 1)
+	assert.Equal(t, 4.0, a.stats[0].Power.GPU)
+
+}
+
+func TestEngineStats_LogValue(t *testing.T) {
+	stats := EngineStats{
+		"FOO": {},
+		"BAR": {},
+	}
+	assert.Equal(t, "BAR,FOO", stats.LogValue().String())
+	clear(stats)
+	assert.Equal(t, "", stats.LogValue().String())
 }
 
 func Test_medianFunc(t *testing.T) {
@@ -83,6 +113,7 @@ func BenchmarkAggregator_EngineStats(b *testing.B) {
 	const count = 1001
 	var engineNames = []string{"Render/3D", "Blitter", "Video", "VideoEnhance"}
 	var a Aggregator
+	a.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	for range count {
 		var stats intel_gpu_top.GPUStats
 		stats.Engines = make(map[string]intel_gpu_top.EngineStats, len(engineNames))
