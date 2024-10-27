@@ -1,4 +1,4 @@
-package aggregator
+package collector
 
 import (
 	"fmt"
@@ -30,6 +30,12 @@ func (a *Aggregator) add(stats igt.GPUStats) {
 	defer a.lock.Unlock()
 	// TODO: if no one is collecting, this will grow until OOM.  should we clear a certain number of measurements?
 	a.stats = append(a.stats, stats)
+}
+
+func (a *Aggregator) len() int {
+	a.lock.RLock()
+	defer a.lock.RUnlock()
+	return len(a.stats)
 }
 
 func (a *Aggregator) Reset() {
