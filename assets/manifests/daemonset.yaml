@@ -1,0 +1,46 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: intel-gpu-exporter
+  namespace: infra
+  labels:
+    app: intel-gpu-exporter
+spec:
+  selector:
+    matchLabels:
+      app: intel-gpu-exporter
+  template:
+    metadata:
+      labels:
+        app: intel-gpu-exporter
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      nodeSelector:
+        intel.feature.node.kubernetes.io/gpu: "true"
+      volumes:
+        - name: dev-dri
+          hostPath:
+            path: /dev/dri
+            type: Directory
+      containers:
+      - name: intel-gpu-exporter
+        image: ghcr.io/clambin/intel-gpu-exporter
+        args:
+        - --interval=1s
+        ports:
+        - name: metrics
+          containerPort: 9090
+        securityContext:
+          privileged: true
+        resources:
+          requests:
+            cpu: 1m
+            memory: 12Mi
+          limits:
+            memory: 24Mi
+        volumeMounts:
+          - name: dev-dri
+            mountPath: /dev/dri
