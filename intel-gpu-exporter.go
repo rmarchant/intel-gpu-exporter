@@ -18,7 +18,7 @@ import (
 var (
 	debug    = flag.Bool("debug", false, "Enable debug logging")
 	addr     = flag.String("addr", ":9090", "Prometheus metrics listener address")
-	interval = flag.Duration("interval", 5*time.Second, "Interval to collect statistics")
+	interval = flag.Duration("interval", time.Second, "Interval to collect statistics")
 )
 
 func main() {
