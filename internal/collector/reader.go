@@ -3,7 +3,7 @@ package collector
 import (
 	"context"
 	"fmt"
-	igt "github.com/clambin/intel-gpu-exporter/pkg/intel-gpu-top"
+	igt "github.com/rmarchant/intel-gpu-exporter/pkg/intel-gpu-top"
 	"io"
 	"log/slog"
 	"strconv"
