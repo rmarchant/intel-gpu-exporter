@@ -1,4 +1,4 @@
-module github.com/clambin/intel-gpu-exporter
+module github.com/rmarchant/intel-gpu-exporter
 
 go 1.24
 
