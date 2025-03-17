@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"github.com/clambin/intel-gpu-exporter/internal/collector"
+	"github.com/rmarchant/intel-gpu-exporter/internal/collector"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log/slog"
