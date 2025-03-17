@@ -97,7 +97,7 @@ func (r *TopReader) ensureReaderIsRunning(ctx context.Context) (err error) {
 
 func buildCommand(scanInterval time.Duration) []string {
 	//const gpuTopCommand = "ssh ubuntu@nuc1 sudo intel_gpu_top -J -s"
-	const gpuTopCommand = "intel_gpu_top -J -s"
+	const gpuTopCommand = "intel_gpu_top -d sriov -J -s"
 
 	return append(
 		strings.Split(gpuTopCommand, " "),
