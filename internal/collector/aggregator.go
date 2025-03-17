@@ -2,7 +2,7 @@ package collector
 
 import (
 	"fmt"
-	igt "github.com/clambin/intel-gpu-exporter/pkg/intel-gpu-top"
+	igt "github.com/rmarchant/intel-gpu-exporter/pkg/intel-gpu-top"
 	"github.com/prometheus/client_golang/prometheus"
 	"io"
 	"log/slog"
