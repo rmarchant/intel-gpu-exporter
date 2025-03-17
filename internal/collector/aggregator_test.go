@@ -1,7 +1,7 @@
 package collector
 
 import (
-	igt "github.com/clambin/intel-gpu-exporter/pkg/intel-gpu-top"
+	igt "github.com/rmarchant/intel-gpu-exporter/pkg/intel-gpu-top"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
