@@ -2,7 +2,7 @@ package collector
 
 import (
 	"context"
-	"github.com/clambin/intel-gpu-exporter/pkg/intel-gpu-top/testutil"
+	"github.com/rmarchant/intel-gpu-exporter/pkg/intel-gpu-top/testutil"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"log/slog"
