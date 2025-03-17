@@ -38,7 +38,7 @@ spec:
           "datasource": {
             "default": true,
             "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
+            "uid": "b4b273ad-3cbf-4ce5-9b34-d0928239d2ee"
           },
           "fieldConfig": {
             "defaults": {
@@ -119,7 +119,7 @@ spec:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "b4b273ad-3cbf-4ce5-9b34-d0928239d2ee"
               },
               "editorMode": "code",
               "expr": "avg by (engine) (gpumon_engine_usage{attrib=\"busy\", node=~\"^$node$\"})",
@@ -216,7 +216,7 @@ spec:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "b4b273ad-3cbf-4ce5-9b34-d0928239d2ee"
               },
               "editorMode": "code",
               "expr": "sum (gpumon_clients_count{node=~\"^$node$\"})",
@@ -314,7 +314,7 @@ spec:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PBFA97CFB590B2093"
+                "uid": "b4b273ad-3cbf-4ce5-9b34-d0928239d2ee"
               },
               "editorMode": "code",
               "expr": "sum by (type) (gpumon_power{node=~\"^$node$\"})",
@@ -341,7 +341,7 @@ spec:
             },
             "datasource": {
               "type": "prometheus",
-              "uid": "PBFA97CFB590B2093"
+              "uid": "b4b273ad-3cbf-4ce5-9b34-d0928239d2ee"
             },
             "definition": "label_values(gpumon_engine_usage,node)",
             "hide": 0,
