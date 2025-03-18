@@ -1,4 +1,8 @@
-THIS IS A FORK WITH BASIC CODE CHANGES TO COLLECT FROM SRIOV DEVICE on PROXMOX
+THIS IS A FORK WITH BASIC CODE CHANGES TO COLLECT FROM SRIOV DEVICE on PROXMOX.
+
+Not meant to run in Docker on proxmox host, as this could break the networking of the host.
+
+Instead, simply compile the go program, and execute on the host.
 
 # intel-gpu-exporter
 [![release](https://img.shields.io/github/v/tag/clambin/intel-gpu-exporter?color=green&label=release&style=plastic)](https://github.com/clambin/intel-gpu-exporter/releases)
